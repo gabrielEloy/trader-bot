@@ -1,0 +1,9 @@
+.center-login {
+    justify-content: center;
+}
+
+.form-login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

@@ -1,0 +1,130 @@
+* {
+  margin: 0;
+  padding: 0;
+  outline: 0;
+  box-sizing: border-box;
+  overflow-y: hidden;
+}
+
+body {
+  background-color: #202020;
+  /* dark_red_#211517 */
+  /* dracula_#282a36 */
+  /* discord_strong_#2f3136 */
+  /* discord_#36393f */
+  /* discord_chat_#40444b */
+  /* windows_#202020 */
+  color: #E1E1D6;
+}
+
+button {
+  cursor: pointer;
+}
+
+.bg-image {
+  position: absolute;
+  background: no-repeat;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+
+.bg-transparent {
+  background-color: transparent;
+}
+
+.bg-color {
+  background-color: #202020;
+}
+
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 30vmin;
+  pointer-events: none;
+}
+
+.App-center {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: calc(10px + 2vmin);
+}
+
+.form {
+  margin-top: 30px;
+  width: 80%;
+}
+
+.field  {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  width: 350px;
+  height: 45px;
+  border-radius: 30px;
+  color: #E1E1D6;
+  font-size: 16px;
+  display: block;
+  margin: 10px;
+  padding: 0 20px 0 20px;
+}
+
+.error {
+  font-size: 16px;
+  color: #dc0c30
+}
+
+.field a {
+  text-decoration: none;
+  color: #E1E1D6;
+  font-size: 17px;
+}
+
+.submit {
+  cursor: pointer;
+  background-color: #dc0c30;
+  width: 200px;
+  border: none;
+}
+
+.label {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.MuiInputBase-root, 
+.MuiTableCell-body, 
+.MuiTableSortLabel-active, 
+.MuiTableSortLabel-root, 
+.MuiTableSortLabel-icon,
+.MuiSvgIcon-colorDisabled,
+.MuiSelect-icon,
+.MuiTypography-caption,
+div[class*="MTablePaginationInner-root"] {
+  color: #E1E1D6 !important;
+}
+
+th[class*="MuiTableCell-head"] {
+  background-color: transparent !important;
+}
+
+div[class*="Component-horizontalScrollContainer-"], div[class*="jss"] {
+  max-height: 42vh;
+  overflow: auto;
+}
+
+
+::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+::-webkit-scrollbar:vertical {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  border: 2px solid white;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, .3);
+}

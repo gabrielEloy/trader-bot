@@ -1,0 +1,84 @@
+.app-config {
+  width: 80%;
+}
+
+.btn-config {
+  display: block !important;
+  margin-bottom: 12px !important;
+}
+
+.overflow-form {
+  height: 70vh;
+}
+
+.field-configuration {
+  width: 150px;
+}
+
+.h2 {
+  color: #e1e1d6;
+}
+
+.button-menu:hover,
+.button-menu:active {
+  border-radius: 25px !important;
+}
+
+.table-configuration {
+  width: 100%;
+  display: flex;
+  margin: auto;
+}
+
+.make-plays__dropdown {
+  padding: 10px 20px;
+  background: #dc0c30;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+}
+
+.make-plays__dropdown_option {
+  background-color: white;
+  color: black;
+  border: 1 px solid white;
+  cursor: pointer;
+}
+
+.make-plays__button {
+  padding: 8px 14px;
+  margin-left: 20px;
+  border-radius: 50%;
+  border: none;
+  background: red;
+  color: white;
+  font-size: 20px;
+  transform: translateY(1px);
+}
+
+.make-plays__add-container {
+  margin: 13px 0;
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+}
+
+.make-plays__playlist {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+  margin: 20px 0;
+}
+
+.make-plays__delete-button {
+  padding: 9px 14px;
+  margin-left: 20px;
+  border-radius: 50%;
+  border: none;
+  background: red;
+  color: white;
+  font-size: 20px;
+  transform: translateY(-6px);
+}

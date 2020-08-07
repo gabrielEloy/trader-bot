@@ -1,0 +1,19 @@
+.date-field {
+    width: 210px;
+}
+
+.time-field {
+    width: 160px;
+}
+
+.generic-field {
+    width: 150px;
+}
+
+.number-field {
+    width: 100px;
+}
+
+.table {
+    width: 80%;
+}
