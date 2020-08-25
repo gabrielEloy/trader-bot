@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React from 'react';
 import robotContext from '../context/robotContext'
 import { Formik, Form, Field } from 'formik';
 import MaterialTable from 'material-table';
 import { Button, Fade, Paper } from '@material-ui/core';
 import { ToastContainer } from 'react-toastify';
-import ClipLoader from "react-spinners/ClipLoader";
 import PulseLoader from "react-spinners/PulseLoader";
-import moment from 'moment';
+import tableIcons from 'components/Material-UI-Icons';
+
 
 import HydraMenu from 'components/HydraMenu';
 import RedSwitch from 'components/RedSwitch';
@@ -18,8 +18,9 @@ import api from 'services/api';
 import 'global.css';
 import './configuration.css';
 
-import background from 'background.jpg';
+import background from 'background.png';
 import get from 'lodash/get'
+import moment from 'moment'
 
 export default class Configuration extends React.Component {
 	static contextType = robotContext
@@ -51,26 +52,35 @@ export default class Configuration extends React.Component {
 	}
 
 	makeThePlays = async () => {
-		const { plays } = this.state;
-
-		const playsArray = plays.map(play => {
-			const fn = this.makePlayFactory(play.currency.replace('/', ''), play.predict)
-			return fn()
+		const { signal: { signals }} = this.context
+		
+		signals.forEach(signal => {
+			const unixDate = moment(signal.date).unix();
+			const now = moment().unix();
+			const tomorrow = moment().endOf('day').unix();
+			if(unixDate > now && unixDate < tomorrow) {
+				const waitTime = (unixDate - now) * 1000
+				console.log({waitTime})
+				setTimeout(async () => {
+					const receivedPlay = this.makePlayFactory(signal.currency, signal.type);
+					await receivedPlay();
+				}, waitTime)
+			}
 		})
-		await Promise.all(playsArray)
+		
 	}
 
 	start = async (value, hand_soros, result, profit, agregated_value, currency, type, duration_time, error, num_martingale, num_soros) => {
-		const {
+		const {	
 			user: {
 				userReducer: {
 					userId,
 					email,
 					balance,
 					isRealAccount,
-					password
+					password,
 				}
-			}
+			},
 		} = this.context
 
 		const { martingaleCoef, delayOperation, martingaleDelay, isMartingale, isSoros, martingaleNum, sorosNum } = this.state;
@@ -106,10 +116,28 @@ export default class Configuration extends React.Component {
 		}
 	}
 
+	getSignals = async () => {
+		const {
+			signal
+		} = this.context
+
+		try {
+			const { data: { records } } = await api.get('/indexSignal')
+			const futureSignals = records.map(record => ({...record, date: 'Thu, 25 Aug 2020 09:35:00 GMT-0300'}))
+			signal.setSignals(futureSignals)
+		} catch (err) {
+			showToast({ type: 'error', message: 'Ocorreu um erro ao baixar os sinais' })
+		}
+	}
+
+	componentDidMount = async () => {
+		await this.getSignals()
+	}
+
 	componentDidUpdate = async (prevProps, prevState) => {
-		if(this.state.shouldFetchResults && !prevState.shouldFetchResults){
+		if (this.state.shouldFetchResults && !prevState.shouldFetchResults) {
 			const timeUntilWinFetch = await this.getLastResolution()
-			this.setState({timeUntilWinFetch})
+			this.setState({ timeUntilWinFetch })
 			setTimeout(async () => {
 				await this.getResultsObj()
 			}, timeUntilWinFetch)
@@ -118,16 +146,16 @@ export default class Configuration extends React.Component {
 
 	getResultsObj = async () => {
 		await new Promise(resolve => setTimeout(resolve, 1000))
-		
+
 		let resultsObj = await this.getLastWins()
 
-		while(resultsObj.open_options.length){
+		while (resultsObj.open_options.length) {
 			await new Promise(resolve => setTimeout(resolve, 1000))
 			resultsObj = await this.getLastWins()
 		}
-		
-		this.setState({resultsObj})
-		this.setState({timeUntilWinFetch: 0, shouldFetchResults: false})
+
+		this.setState({ resultsObj })
+		this.setState({ timeUntilWinFetch: 0, shouldFetchResults: false })
 	}
 
 	getLastWins = async () => {
@@ -153,23 +181,23 @@ export default class Configuration extends React.Component {
 		return lastWins.data.msg
 	}
 
-	getLastResolution = async ()  => {
+	getLastResolution = async () => {
 		const lastPlays = await this.getLastWins()
-		let biggestResolutionTime = 0 ;
+		let biggestResolutionTime = 0;
 
-		if(!lastPlays.open_options.length){
+		if (!lastPlays.open_options.length) {
 			return 60000
 		}
 
-		for(let i = 0; i < lastPlays.open_options.length; i++){
-			if(lastPlays.open_options[i].exp_time > biggestResolutionTime){
+		for (let i = 0; i < lastPlays.open_options.length; i++) {
+			if (lastPlays.open_options[i].exp_time > biggestResolutionTime) {
 				biggestResolutionTime = lastPlays.open_options[i].exp_time
 			}
 		}
 
-		
+
 		const currentTimeMs = Math.round(new Date().getTime() / 1000)
-		
+
 		const timeUntilResolution = (biggestResolutionTime - currentTimeMs) * 1000
 
 
@@ -184,7 +212,7 @@ export default class Configuration extends React.Component {
 			return 60000
 		}
 
-		console.log({currentPlay})
+		console.log({ currentPlay })
 
 
 		const currentTimeMs = Math.round(new Date().getTime() / 1000)
@@ -196,12 +224,12 @@ export default class Configuration extends React.Component {
 
 	checkStop = (value, add) => {
 		let balanceValue = this.balance
-		balanceValue += add 
-		? value 
-		: -value
+		balanceValue += add
+			? value
+			: -value
 
 
-		console.log({balanceValue})
+		console.log({ balanceValue })
 
 		if (balanceValue > 0) {
 			if (balanceValue >= this.state.stopGain) {
@@ -215,7 +243,7 @@ export default class Configuration extends React.Component {
 		}
 
 		if (Math.abs(balanceValue) >= this.state.stopLoss) {
-			showToast({ type: 'error', message: 'Você atingiu o limite de perda'})
+			showToast({ type: 'error', message: 'Você atingiu o limite de perda' })
 			this.balance = 0
 			this.isPlaying = false
 			this.setState({ isPlaying: false })
@@ -225,19 +253,19 @@ export default class Configuration extends React.Component {
 
 	checkWin = async id => {
 		const { resultsObj } = this.state;
-		
-		while(!resultsObj.closed_options){
+
+		while (!resultsObj.closed_options) {
 			await new Promise(resolve => setTimeout(resolve, 1100))
 		}
-		
-		
+
+
 		let targetPlay = resultsObj.closed_options.find(play => play.id.includes(id))
 
-		while(!targetPlay){
+		while (!targetPlay) {
 			await new Promise(resolve => setTimeout(resolve, 800))
 			targetPlay = resultsObj.closed_options.find(play => play.id.includes(id))
 		}
-		
+
 		const { amount, win_amount } = targetPlay
 
 		if (targetPlay.win === 'win') {
@@ -246,36 +274,16 @@ export default class Configuration extends React.Component {
 			this.balance += addedAmount
 			return true
 		}
-		
+
 		this.checkStop(amount, false)
 		this.balance -= amount;
 		return false
 	}
-	/* checkWin = async id => {
-		let lastPlays = await this.getLastWins();
-		let targetPlay = lastPlays.closed_options.find(play => play.id.includes(id))
 
-
-		while (!targetPlay) {
-			await new Promise(resolve => setTimeout(resolve, 5000))
-			lastPlays = await this.getLastWins();
-			targetPlay = lastPlays.closed_options.find(play => play.id.includes(id))
-		}
-		const { amount, win_amount } = targetPlay
-
-		if (targetPlay.win === 'win') {
-			const addedAmount = win_amount - amount
-			this.checkStop(addedAmount, true)
-			this.balance += addedAmount
-			return true
-		}
-		
-		this.checkStop(amount, false)
-		this.balance -= amount;
-		return false
-	} */
 
 	makePlayFactory = (currency, predict) => {
+		console.log('makeplay factory')
+		console.log({currency, predict})
 		const { isMartingale, martingaleNum, sorosNum, initialValue, martingaleCoef, isSoros } = this.state
 
 		const configuredValue = isMartingale
@@ -291,7 +299,7 @@ export default class Configuration extends React.Component {
 				value = initialValue;
 				tries = configuredValue;
 			}
-
+			
 			while (this.isPlaying) {
 				console.log({ ['this.isPlaying']: this.isPlaying })
 				let id;
@@ -302,11 +310,11 @@ export default class Configuration extends React.Component {
 					tries = 0;
 					break;
 				}
-				
-				this.setState({shouldFetchResults: true, resultsObj: {}})
+
+				this.setState({ shouldFetchResults: true, resultsObj: {} })
 				console.log('chegou no should fetch results')
-				while(!this.state.timeUntilWinFetch){
-					await new Promise(resolve => setTimeout(resolve, 500))	
+				while (!this.state.timeUntilWinFetch) {
+					await new Promise(resolve => setTimeout(resolve, 500))
 					console.log('ta no while')
 				}
 
@@ -407,10 +415,14 @@ export default class Configuration extends React.Component {
 					userId,
 					balance,
 				}
+			},
+			signal: {
+				signals
 			}
 		} = this.context
 
-		const { activeTab,
+		const {
+			activeTab,
 			martingaleCoef,
 			martingaleNum,
 			sorosNum,
@@ -422,6 +434,8 @@ export default class Configuration extends React.Component {
 			isMartingale,
 			isSoros
 		} = this.state;
+
+		console.log({ context: this.context })
 		return (
 			<>
 				<img src={background} alt="background" className="bg-image" />
@@ -508,11 +522,9 @@ export default class Configuration extends React.Component {
 										, email: props.match.params.email
 										, user_id: userId
 									}).then(res => {
-										console.log(res)
 										showToast({ type: res.data.type, message: res.data.message })
 										setSubmitting(false)
 									})
-									/* saveConfiguration() */
 								}}
 							>
 								{({ isSubmitting }) => (
@@ -575,59 +587,25 @@ export default class Configuration extends React.Component {
 												</Fade>
 												<Fade className="fade" in={activeTab === "4"} style={{ backgroundColor: "transparent", display: activeTab === "4" ? 'block' : 'none' }}>
 													<Paper style={{ overflowY: 'auto' }}>
-														<h2 style={{ color: 'white' }}>Jogadas</h2>
-														<label style={{ color: 'white' }} for="plays">Adicionar jogada</label>
-														<div className='make-plays__add-container'>
-															<select value={this.state.addedOption} onChange={e => this.setState({ addedOption: e.target.value })} className="make-plays__dropdown" name="plays">
-																<option selected disabled hidden value="">Opção</option>
-																{this.state.availablePlays.map(availablePlay => (
-																	<option
-																		key={availablePlay.currency}
-																		className="make-plays__dropdown_option"
-																		value={availablePlay.currency}>
-																		{availablePlay.currency}
-																	</option>
-																))}
-															</select>
-															<p style={{ color: 'white', margin: '0 20px' }}>Vai</p>
-															<select value={this.state.predict} onChange={e => this.setState({ predict: e.target.value })} className="make-plays__dropdown" name="plays">
-																<option selected disabled hidden value="">Subir/Descer</option>
-																<option className="make-plays__dropdown_option" value="call">Subir</option>
-																<option className="make-plays__dropdown_option" value="put">Descer</option>
-															</select>
-
-															<button
-																onClick={this.handleAddOption}
-																className="make-plays__button">+</button>
-														</div>
-														{this.state.plays.map(play => (
-															<div className="make-plays__playlist" key={play.currency}>
-																<p style={{ color: 'white', marginBottom: 10 }}>{play.currency} vai {play.predict === 'put' ? 'Subir' : 'Descer'}</p>
-																<button
-																	onClick={() => this.handleRemoveOption(play.currency)}
-																	className="make-plays__delete-button">X</button>
-															</div>
-														))}
+														<h2 style={{ color: 'white' }}>Lista de sinais</h2>
+														<MaterialTable
+															title="Lista de Sinais"
+															icons={tableIcons}
+															style={{ backgroundColor: 'transparent', color: '#E1E1D6' }}
+															columns={[
+																{ title: 'Id', field: 'config_signs_list_id' },
+																{ title: 'Data', field: 'date' },
+																{ title: 'Hora', field: 'hour' },
+																{ title: 'Moeda', field: 'currency' },
+																{ title: 'Tipo', field: 'type' },
+															]}
+															data={signals}
+														/>
 													</Paper>
 												</Fade>
 											</div>
 											<div style={{ height: 65, display: 'flex' }}>
 												<div style={{ width: '50%' }}>
-													{/* <button
-														className="field submit"
-														type="submit"
-														disabled={isSubmitting}
-													>
-														Salvar
-														{(
-															isSubmitting &&
-															<ClipLoader
-																css={"margin-left: 5px;"}
-																size={15}
-																color={"#fff"}
-															/>
-														)}
-													</button> */}
 												</div>
 												<div style={{ width: '50%', margin: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
 													{(

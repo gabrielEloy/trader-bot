@@ -38,15 +38,8 @@ export default function SignalConfiguration(props) {
 	async function loadSignalList() {
 		let signals = await api.get('/indexSignal')
 		const records = signals.data.records
-
-		// add 1 day on date because on format the date is setting to 1 day ago
-		//records.forEach(r => {
-		//	const date = new Date(r.date)
-		//	date.setDate(date.getDate() + 1)
-		//	r.date = moment(date).format('DD/MM/YYYY')
-		//})
+		
 		signals.data.records.forEach(r => r.date = moment(r.date).format("DD/MM/YYYY"))
-
 		setSignalList(records)
 	}
 

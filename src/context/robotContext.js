@@ -1,5 +1,5 @@
 import { createContext } from 'react';
 
-const RobotContext = createContext()
+const RobotContext = createContext();
 
 export default RobotContext

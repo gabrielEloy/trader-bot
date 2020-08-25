@@ -12,12 +12,13 @@ import api from 'services/api';
 import robotContext from '../context/robotContext'
 import actions from '../actionTypes'
 
-import logo from 'logo.png';
+import logo from 'group.svg'
+import logoText from 'logo-text.svg'
 
 import 'global.css';
 import './login.css';
 
-import background from 'background.jpg';
+import background from 'background.png';
 
 export default function Login() {
 	const history = useHistory();
@@ -30,22 +31,24 @@ export default function Login() {
 		const { email, password, mode } = values
 		const {
 			data: { id, type, balance, message }
-		} = await api.post('/login', { email, password, mode});
-		
-		if(type === 'success'){
+		} = await api.post('/login', { email, password, mode });
+
+		if (type === 'success') {
 			history.push(`/configuration`);
-			userDispatcher({type: actions.USER_LOGIN_SUCCESS , value: {
-				email,
-				userId: id,
-				password,
-				isRealAccount: mode,
-				balance
-			}})
+			userDispatcher({
+				type: actions.USER_LOGIN_SUCCESS, value: {
+					email,
+					userId: id,
+					password,
+					isRealAccount: mode,
+					balance
+				}
+			})
 		}
-		else if ( type === 'error'){
+		else if (type === 'error') {
 			showToast({ type, message: message })
 		}
-		else if (id === 1){
+		else if (id === 1) {
 			history.push(`/systemSettings/${id}`);
 		}
 	}
@@ -57,7 +60,10 @@ export default function Login() {
 			<div className="App">
 				<ToastContainer />
 				<div className="App-center center-login bg-transparent">
-					<img src={logo} alt="logo" className="App-logo" />
+					<div className="logo-container">
+						<img src={logo} alt="logo" className="App-logo" />
+						<img src={logoText} alt="H trader" className="App-logo__text" />
+					</div>
 					<Formik
 						initialValues={{ email: '', password: '', mode: false }}
 						validate={values => {

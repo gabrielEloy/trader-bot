@@ -90,6 +90,8 @@ class StartOperation():
         while API == None:
             API = Authentication.login(False, params['email'], params['password'], params['mode'], params['user_group_id'])
         
+        print(API)
+
         while date_is_greather_than_now:
             _date = params['date']
             if (_date == None or (_date.now().date() == _date.date() and datetime.now().hour >= _date.hour and datetime.now().minute >= _date.minute)):

@@ -41,9 +41,23 @@ button {
   text-align: center;
 }
 
+.logo-container{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+}
+
 .App-logo {
-  height: 30vmin;
+  height: 20vmin;
   pointer-events: none;
+  transform: translateX(25px);
+}
+
+.App-logo__text {
+  height: 5vmin;
+  margin-top: 20px;
 }
 
 .App-center {

@@ -1,4 +1,4 @@
-import React, { Component, useReducer, useEffect } from 'react';
+import React, { useState, useReducer, useEffect } from 'react';
 import RobotContext from './context/robotContext'
 import Routes from './routes';
 
@@ -13,8 +13,9 @@ const { ipcRenderer } = electron;
 
 
 const App = () => {
-  const [playReducer, playDispatcher] = useReducer(PlayReducer, playInitialValue)
-  const [userReducer, userDispatcher] = useReducer(UserReducer, userInitialValue)
+  const [playReducer, playDispatcher] = useReducer(PlayReducer, playInitialValue);
+  const [userReducer, userDispatcher] = useReducer(UserReducer, userInitialValue);
+  const [signals, setSignals] = useState([])
 
   useEffect(() => {
     ipcRenderer.on('MESSAGE_FROM_BACKGROUND_VIA_MAIN', (event, args) => {
@@ -34,6 +35,10 @@ const App = () => {
     user: {
       userReducer,
       userDispatcher
+    },
+    signal: {
+      signals,
+      setSignals
     }
   }
   return (

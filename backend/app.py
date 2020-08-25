@@ -182,18 +182,18 @@ def start():
     print('fiz a requisicao')
     data = request.get_json()
     data['API'] = Authentication.login(False, data['email'], data['password'], data['mode'], data['user_group_id'])
+    data['API'].connect()
     data['date'] = None
     data['duration_time'] = 30
 
     res = StartOperation.buy(data)
-    print('terminou saporra')
     return res
 
 @app.route('/check_win', methods=['POST'])
 def check_win(): 
     data = request.get_json()
     API = Authentication.login(False, data['email'], data['password'], data['mode'], data['user_group_id'])
-    
+    API.connect()
     res = API.get_optioninfo_v2(10)
         
     if res:
@@ -203,6 +203,18 @@ def check_win():
         "type": "error",
         "message": "Houve um erro, por favor tente novamente"
     }, 400
+
+@app.route('/teste', methods=['POST'])
+def check_win_v3(): 
+    data = request.get_json()
+    API = Authentication.login(False, data['email'], data['password'], data['mode'], data['user_group_id'])
+    API.connect()
+    check, id = API.check_win_v3(data['id_number'])
+
+    print(id)
+    print(check)
+    return 'ok'
+        
 
     
 
