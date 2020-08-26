@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import concurrent.futures
 import json
 import time
+from iqoptionapi.stable_api import IQ_Option
 
 from models import *
 from settings import *
@@ -177,7 +178,7 @@ def saveConfiguration():
 
     return Response(json.dumps(res), 200, mimetype='application/json')
 
-@app.route('/start', methods=['POST'])
+""" @app.route('/start', methods=['POST'])
 def start(): 
     print('fiz a requisicao')
     data = request.get_json()
@@ -187,22 +188,38 @@ def start():
     data['duration_time'] = 30
 
     res = StartOperation.buy(data)
+    return res """
+
+@app.route('/start', methods=['POST'])
+def start(): 
+    data = request.get_json()
+    data['API'] = Authentication.login(False, data['email'], data['password'], data['mode'], data['user_group_id'])
+    data['date'] = None
+    data['duration_time'] = 30
+
+    res = StartOperation.buy(data)
     return res
 
 @app.route('/check_win', methods=['POST'])
 def check_win(): 
     data = request.get_json()
-    API = Authentication.login(False, data['email'], data['password'], data['mode'], data['user_group_id'])
+    API = IQ_Option(data['email'], data['password'])
     API.connect()
     res = API.get_optioninfo_v2(10)
         
-    if res:
-        print(res)
-        return res
-    return {
-        "type": "error",
-        "message": "Houve um erro, por favor tente novamente"
-    }, 400
+    try:
+        if res:
+            print(res)
+            return res
+        return {
+            "type": "error",
+            "message": "Houve um erro, por favor tente novamente"
+            }, 400
+    except:
+        return {
+            "type": "error",
+            "message": "Houve um erro, por favor tente novamente"
+            }, 400
 
 @app.route('/teste', methods=['POST'])
 def check_win_v3(): 

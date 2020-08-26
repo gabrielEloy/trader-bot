@@ -6,6 +6,7 @@ class Authentication():
         error_password="""{"code":"invalid_credentials","message":"You entered the wrong credentials. Please check that the login/password is correct."}"""
     
         API = IQ_Option(email, password)
+        API.connect()
         check, reason = API.connect()
 
         print(check)
@@ -84,24 +85,39 @@ class StartOperation():
     def buy(params):
         print('params', params)
         date_is_greather_than_now = True
+        API = params["API"]
+        plays = params["plays"]
 
-        API = params['API']
+        agregated_value=[]
+        currency=[]
+        type=[]
+        duration_time=[]
 
-        while API == None:
-            API = Authentication.login(False, params['email'], params['password'], params['mode'], params['user_group_id'])
+        for play in plays:
+            agregated_value.append(play["agregated_value"])
+            currency.append(play["currency"])
+            type.append(play["type"])
+            duration_time.append(play["expiration"])
+
+        buy_response = API.buy_multi(agregated_value, currency, type, duration_time)
         
-        print(API)
+        return {
+            "type": 'success',
+            "id": buy_response,
+        }, 200
 
-        while date_is_greather_than_now:
+
+        
+        """ while date_is_greather_than_now:
             _date = params['date']
             if (_date == None or (_date.now().date() == _date.date() and datetime.now().hour >= _date.hour and datetime.now().minute >= _date.minute)):
-                date_is_greather_than_now = False
+                date_is_greather_than_now = False """
         
-        agregated_value = int(params['initial_value'])
+        """ agregated_value = int(params['initial_value'])
         currency = params['currency']
         type = params['type']
         print("type", type)
-        """ duration_time = params['duration_time'] """
+        duration_time = params['duration_time']
         duration_time = 1
 
         while API == None:
@@ -120,5 +136,5 @@ class StartOperation():
             "id": buy_response[1],
             "resto": buy_response
         }, 200
-
+ """
         

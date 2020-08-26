@@ -54,23 +54,51 @@ export default class Configuration extends React.Component {
 	makeThePlays = async () => {
 		const { signal: { signals }} = this.context
 		
+		const signalsByplayTime = {}
+		
+		
 		signals.forEach(signal => {
 			const unixDate = moment(signal.date).unix();
-			const now = moment().unix();
-			const tomorrow = moment().endOf('day').unix();
-			if(unixDate > now && unixDate < tomorrow) {
-				const waitTime = (unixDate - now) * 1000
-				console.log({waitTime})
-				setTimeout(async () => {
-					const receivedPlay = this.makePlayFactory(signal.currency, signal.type);
-					await receivedPlay();
-				}, waitTime)
+			
+			if(signalsByplayTime[unixDate]){
+				signalsByplayTime[unixDate].push(signal)
+			} else {
+				signalsByplayTime[unixDate] = [signal]
 			}
 		})
 		
+		
+		
+		const now = moment().unix();
+		const tomorrow = moment().endOf('day').unix()
+		
+		for(let playSetUnixTime in signalsByplayTime){
+			if(playSetUnixTime > now && playSetUnixTime < tomorrow){
+				const waitTime = Math.round(playSetUnixTime - now) * 1000;
+				console.log({waitTime})
+				setTimeout(async () => {
+					const receivedPlay = this.makePlayFactory(signalsByplayTime[playSetUnixTime]);
+					await receivedPlay();
+				}, waitTime)
+			}
+		}
+		
+		console.log({signalsByplayTime})
+		/* const now = moment().unix();
+		const tomorrow = moment().endOf('day').unix()
+		if(unixDate > now && unixDate < tomorrow) {
+			const waitTime = (unixDate - now) * 1000
+			console.log({waitTime})
+			setTimeout(async () => {
+				const receivedPlay = this.makePlayFactory(signal.currency, signal.type);
+				await receivedPlay();
+			}, waitTime)
+		} */
+
+		
 	}
 
-	start = async (value, hand_soros, result, profit, agregated_value, currency, type, duration_time, error, num_martingale, num_soros) => {
+	start = async (plays, hand_soros, result, profit, agregated_value, currency, type, duration_time, error, num_martingale, num_soros) => {
 		const {	
 			user: {
 				userReducer: {
@@ -93,7 +121,7 @@ export default class Configuration extends React.Component {
 				, martingale_coef: martingaleCoef
 				, num_martingale
 				, num_soros
-				, initial_value: value
+				, plays
 				, delay_operation: delayOperation
 				, delay_martingale: martingaleDelay
 				, is_martingale: isMartingale
@@ -123,7 +151,7 @@ export default class Configuration extends React.Component {
 
 		try {
 			const { data: { records } } = await api.get('/indexSignal')
-			const futureSignals = records.map(record => ({...record, date: 'Thu, 25 Aug 2020 09:35:00 GMT-0300'}))
+			const futureSignals = records.map(record => ({...record, date: 'Wed 26 Aug 2020 12:41:20 GMT-0300'}))
 			signal.setSignals(futureSignals)
 		} catch (err) {
 			showToast({ type: 'error', message: 'Ocorreu um erro ao baixar os sinais' })
@@ -281,33 +309,42 @@ export default class Configuration extends React.Component {
 	}
 
 
-	makePlayFactory = (currency, predict) => {
-		console.log('makeplay factory')
-		console.log({currency, predict})
+	makePlayFactory = (playsArray) => {
 		const { isMartingale, martingaleNum, sorosNum, initialValue, martingaleCoef, isSoros } = this.state
 
-		const configuredValue = isMartingale
+		let data = playsArray.map(play => ({
+			...play,
+			tries:  isMartingale ? martingaleNum : sorosNum,
+			agregated_value: initialValue,
+			expiration: parseInt(play.duration_time.split(' ')[0])
+		}))
+
+
+		/* const configuredValue = isMartingale
 			? martingaleNum
 			: sorosNum
-		let tries = configuredValue;
+		let tries = configuredValue; */
 
-		let value = initialValue
+		/* let value = initialValue */
 
 		return async () => {
-
-			if (tries === 0) {
+			console.log({data})
+			data = data.filter(play => play.tries > 0)
+			/* if (tries === 0) {
 				value = initialValue;
 				tries = configuredValue;
 			}
-			
+			 */
 			while (this.isPlaying) {
 				console.log({ ['this.isPlaying']: this.isPlaying })
-				let id;
 				try {
-					id = await this.start(value, 0, null, null, 0, currency, predict, null, false, martingaleNum, sorosNum)
+					const ids = await this.start(data, 0, null, null, 0, null, null, null, false, martingaleNum, sorosNum)
+					for(let i = 0; i < ids.length; i ++){
+						data[i].id = ids[i]
+					}
 				} catch (err) {
-					console.log(`${currency} erro`)
-					tries = 0;
+					console.log(`${'currency'} erro`)
+					/* tries = 0; */
 					break;
 				}
 
@@ -321,25 +358,26 @@ export default class Configuration extends React.Component {
 				console.log(`esperando o timeout - ${this.state.timeUntilWinFetch}`)
 
 				await new Promise(resolve => setTimeout(resolve, this.state.timeUntilWinFetch))
-				let win = this.checkWin(id)
-				if (isMartingale) {
-					if (win) {
-						value = initialValue
-						tries = configuredValue;
-					} else {
-						value = value * martingaleCoef
-						tries -= 1;
+				data.map(play => {
+					const win = this.checkWin(play.id)
+					if (isMartingale) {
+						if (win) {
+							play.agregated_value = initialValue
+							play.tries = isMartingale ? martingaleNum : sorosNum;
+						} else {
+							play.agregated_value = play.agregated_value * martingaleCoef
+							play.tries -= 1;
+						}
+					} else if (isSoros) {
+						if (win) {
+							play.agregated_value += play.agregated_value * 0.8;
+							play.tries -= 1;
+						} else {
+							play.agregated_value = initialValue;
+							play.tries = isMartingale ? martingaleNum : sorosNum;
+						}
 					}
-				} else if (isSoros) {
-					if (win) {
-						value += value * 0.8;
-						tries -= 1;
-					} else {
-						value = initialValue;
-						tries = configuredValue;
-					}
-				}
-
+				})
 			}
 		}
 	}
