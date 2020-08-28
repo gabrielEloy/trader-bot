@@ -1,13 +1,31 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { useHistory } from 'react-router-dom';
 import Button from '@material-ui/core/Button';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import * as Icon from '@material-ui/icons';
+import robotContext from '../context/robotContext'
 
 import 'global.css';
 
 function HydraMenu(props) {
+	const {
+		user: {
+			userReducer: {
+				userId,
+				email,
+				balance,
+				isRealAccount,
+				password,
+			}
+		},
+	} = useContext(robotContext)
+
+	console.log({userId,
+		email,
+		balance,
+		isRealAccount,
+		password,})
 	const history = useHistory();
 
 	const [anchorEl, setAnchorEl] = useState(null);
@@ -60,31 +78,36 @@ function HydraMenu(props) {
 					<Icon.Home />Login
 				</MenuItem>
 				{
-					props.id != 1 &&
+					userId != 1 &&
+					/* true && */
 					<MenuItem onClick={handleConfiguration}>
 						<Icon.Build />Configurações
 					</MenuItem>
 				}
 				{
-					(props.id == 2 || props.id == 3) &&
+					(userId == 2 || userId == 3 || userId == 1) &&
+					/* true && */
 					<MenuItem onClick={handleUserManagement}>
 						<Icon.SupervisorAccount />Ger.Usuários
 					</MenuItem>
 				}
 				{
-					(props.id == 1 || props.id == 2 || props.id == 3) &&
+					(userId == 1 || userId == 2 || userId == 3) &&
+					/* true && */
 					<MenuItem onClick={handleSignalConfiguration}>
 						<Icon.List />Lista Sinais
 					</MenuItem>
 				}
 				{
-					props.id == 2 &&
+					userId == 2 &&
+					/* true && */
 					<MenuItem onClick={handleAdminSettings}>
 						<Icon.Lock />Ger. Sistema
 					</MenuItem>
 				}
 				{
-					props.id == 1 &&
+					userId == 1 &&
+					/* true && */
 					<MenuItem onClick={handleSystemSettings}>
 						<Icon.Lock />Ger. Sistema
 					</MenuItem>

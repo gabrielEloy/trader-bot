@@ -19,10 +19,16 @@
   color: #e1e1d6;
 }
 
+.button-menu{
+  overflow: visible;
+}
+
 .button-menu:hover,
 .button-menu:active {
   border-radius: 25px !important;
 }
+
+
 
 .table-configuration {
   width: 100%;
@@ -81,4 +87,25 @@
   color: white;
   font-size: 20px;
   transform: translateY(-6px);
+}
+
+.icon-sytle {
+  margin-bottom: 10px;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.icon-sizer {
+  height: 80px;
+  position: absolute;
+  width: 80px;
+  transform: translateX(-2px);
+}
+
+.desc-text{
+  margin-top: 5px;
+  font-weight: 900;
 }

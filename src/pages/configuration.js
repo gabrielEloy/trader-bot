@@ -22,6 +22,11 @@ import background from 'background.png';
 import get from 'lodash/get'
 import moment from 'moment'
 
+import robot from 'robot.png'
+import results from 'results.png'
+import soros from 'soros.png'
+import general from 'general.png'
+
 export default class Configuration extends React.Component {
 	static contextType = robotContext
 
@@ -52,42 +57,42 @@ export default class Configuration extends React.Component {
 	}
 
 	makeThePlays = async () => {
-		const { signal: { signals }} = this.context
-		
+		const { signal: { signals } } = this.context
+
 		const signalsByplayTime = {}
-		
-		
+
+
 		signals.forEach(signal => {
 			const unixDate = moment(signal.date).unix();
-			
-			if(signalsByplayTime[unixDate]){
+
+			if (signalsByplayTime[unixDate]) {
 				signalsByplayTime[unixDate].push(signal)
 			} else {
 				signalsByplayTime[unixDate] = [signal]
 			}
 		})
-		
-		
-		
+
+
+
 		const now = moment().unix();
 		const tomorrow = moment().endOf('day').unix()
-		
-		for(let playSetUnixTime in signalsByplayTime){
-			if(playSetUnixTime > now && playSetUnixTime < tomorrow){
+
+		for (let playSetUnixTime in signalsByplayTime) {
+			if (playSetUnixTime > now && playSetUnixTime < tomorrow) {
 				const waitTime = Math.round(playSetUnixTime - now) * 1000;
-				console.log({waitTime})
+				console.log({ waitTime })
 				setTimeout(async () => {
 					const receivedPlay = this.makePlayFactory(signalsByplayTime[playSetUnixTime]);
 					await receivedPlay();
 				}, waitTime)
 			}
 		}
-		
-		console.log({signalsByplayTime})
+
+		console.log({ signalsByplayTime })
 	}
 
 	start = async (plays, hand_soros, result, profit, agregated_value, currency, type, duration_time, error, num_martingale, num_soros) => {
-		const {	
+		const {
 			user: {
 				userReducer: {
 					userId,
@@ -109,7 +114,7 @@ export default class Configuration extends React.Component {
 				, martingale_coef: martingaleCoef
 				, num_martingale
 				, num_soros
-				, plays
+				, plays: plays.map(play => ({...play, initial_value: play.agregated_value}))
 				, delay_operation: delayOperation
 				, delay_martingale: martingaleDelay
 				, is_martingale: isMartingale
@@ -139,7 +144,7 @@ export default class Configuration extends React.Component {
 
 		try {
 			const { data: { records } } = await api.get('/indexSignal')
-			const futureSignals = records.map(record => ({...record, date: `${record.date}-0300`}))
+			const futureSignals = records.map(record => ({ ...record, date: `${record.date}-0300` }))
 			signal.setSignals(futureSignals)
 		} catch (err) {
 			showToast({ type: 'error', message: 'Ocorreu um erro ao baixar os sinais' })
@@ -170,7 +175,7 @@ export default class Configuration extends React.Component {
 			resultsObj = await this.getLastWins()
 		}
 
-		
+
 		return resultsObj
 	}
 
@@ -275,69 +280,69 @@ export default class Configuration extends React.Component {
 
 		while (!resultsObj.closed_options) {
 			resultsObj = await this.getResultsObj()
-			if(!resultsObj.closed_options){
+			if (!resultsObj.closed_options) {
 				retryTime = await this.getLastResolution()
 			}
 			await new Promise(resolve => setTimeout(resolve, retryTime))
 		}
 
 		console.log('eu passo do while do checkwin ?')
-		console.log({playsArray, resultsObj})
-		
+		console.log({ playsArray, resultsObj })
+
 		const updatedPlaysArray = playsArray.map(play => {
 			const targetPlay = resultsObj.closed_options.find(option => option.id.includes(play.id))
-			console.log({targetPlay})
+			console.log({ targetPlay })
 
-			if(!targetPlay){
-				return {...play, tries: 0}
+			if (!targetPlay) {
+				return { ...play, tries: 0 }
 			}
 
-			const { amount, win_amount } = targetPlay	
-			
+			const { amount, win_amount } = targetPlay
+
 			if (targetPlay.win === 'win') {
 				const addedAmount = win_amount - amount
 				this.checkStop(addedAmount, true)
 				this.balance += addedAmount
-				
+
 				const agregated_value = isSoros
-				? play.agregated_value += play.agregated_value * 0.8
-				: initialValue
-				
-				return {...play, agregated_value}
+					? play.agregated_value += play.agregated_value * 0.8
+					: initialValue
+
+				return { ...play, agregated_value }
 			}
-	
+
 			this.checkStop(amount, false)
 			this.balance -= amount;
-			const agregated_value = isSoros 
-			? initialValue
-			: play.agregated_value * martingaleCoef
-			return {...play, tries: play.tries - 1, agregated_value}
+			const agregated_value = isSoros
+				? initialValue
+				: play.agregated_value * martingaleCoef
+			return { ...play, tries: play.tries - 1, agregated_value }
 		})
 
-		console.log('eu sai do map', {updatedPlaysArray})
+		console.log('eu sai do map', { updatedPlaysArray })
 
 		return updatedPlaysArray
 	}
-	
-	
+
+
 	makePlayFactory = (playsArray) => {
 		const { isMartingale, martingaleNum, sorosNum, initialValue } = this.state
 
 		let data = playsArray.map(play => ({
 			...play,
-			tries:  isMartingale ? martingaleNum : sorosNum,
+			tries: isMartingale ? martingaleNum : sorosNum,
 			agregated_value: initialValue,
 			expiration: parseInt(play.duration_time.split(' ')[0])
 		}))
 
 		return async () => {
-			while (this.isPlaying && data.length >  0) {
+			while (this.isPlaying && data.length > 0) {
 				data = data.filter(play => play.tries > 0)
 
 				console.log({ ['this.isPlaying']: this.isPlaying })
 				try {
 					const ids = await this.start(data, 0, null, null, 0, null, null, null, false, martingaleNum, sorosNum)
-					for(let i = 0; i < ids.length; i ++){
+					for (let i = 0; i < ids.length; i++) {
 						data[i].id = ids[i]
 					}
 				} catch (err) {
@@ -359,7 +364,7 @@ export default class Configuration extends React.Component {
 				console.log('passei do timeout agora é só esperar o async')
 				data = await this.checkWin(data)
 
-				console.log({data})
+				console.log({ data })
 			}
 		}
 	}
@@ -471,33 +476,39 @@ export default class Configuration extends React.Component {
 					</div>
 					<div style={{ marginTop: 12, display: 'flex' }}>
 						<ul style={{ marginLeft: 15, textAlign: 'left', wiidth: '25vh' }}>
-							<li style={{ marginBottom: 10 }}>
+							<li className="icon-sytle">
 								{
 									activeTab === "3"
-										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "3" })}>G</Button>
-										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "3" })}>G</Button>
+										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "3" })}><img className="icon-sizer" src={general} /></Button>
+										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "3" })}><img className="icon-sizer" src={general} /></Button>
 								}
+								<span className="desc-text">Geral</span>
 							</li>
-							<li style={{ marginBottom: 10 }}>
+							<li className="icon-sytle">
 								{
 									activeTab === "1"
-										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "1" })}>M</Button>
-										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "1" })}>M</Button>
+										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "1" })}>
+											<img className="icon-sizer" src={robot} />
+										</Button>
+										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "1" })}><img className="icon-sizer" src={robot} /></Button>
 								}
+								<span className="desc-text">Martingale</span>
 							</li>
-							<li style={{ marginBottom: 10 }}>
+							<li className="icon-sytle">
 								{
 									activeTab === "2"
-										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "2" })}>S</Button>
-										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "2" })}>S</Button>
+										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "2" })}><img className="icon-sizer" src={soros} /></Button>
+										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "2" })}><img className="icon-sizer" src={soros} /></Button>
 								}
+								<span className="desc-text">Soros</span>
 							</li>
-							<li>
+							<li className="icon-sytle">
 								{
 									activeTab === "4"
-										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "4" })}>R</Button>
-										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "4" })}>R</Button>
+										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "4" })}><img className="icon-sizer" src={results} /></Button>
+										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "4" })}><img className="icon-sizer" src={results} /></Button>
 								}
+								<span className="desc-text">Resultados</span>
 							</li>
 						</ul>
 						<div className="App-center app-config bg-transparent">

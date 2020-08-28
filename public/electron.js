@@ -16,7 +16,7 @@ function createWindow() {
   });
   mainWindow.maximize();
   // mainWindow.setMenu(null)
-  mainWindow.removeMenu();
+  /* mainWindow.removeMenu(); */
   mainWindow.setTitle("H Trader");
 
   mainWindow.loadURL(isDev ? 'http://localhost:3000' :
