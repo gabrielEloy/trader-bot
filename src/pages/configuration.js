@@ -434,7 +434,6 @@ export default class Configuration extends React.Component {
 		const backgroundColorActive = '#61541e'
 
 		const { props } = this;
-		
 		const {
 			user: {
 				userReducer: {
