@@ -141,6 +141,7 @@ class User(db.Model):
                 "message": "Usuário Inserido com sucesso!"
             }
         except Exception as ex:
+            print(ex)
             return {
                 "type": "error",
                 "message": "Ocorreu um erro ao inserir o usuário."
@@ -170,6 +171,7 @@ class User(db.Model):
                 "message": "Usuário excluído com sucesso!"
             }
         except Exception as ex:
+            print(ex)
             return {
                 "type": "error",
                 "message": "Ocorreu um erro ao excluir o usuário."

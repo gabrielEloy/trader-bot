@@ -62,6 +62,7 @@ export default function AdminSettings(props) {
 	}
 
 	const handleDelete = async (email) => {
+		console.log('manoooooo', {email})
 		const res = await api.delete(`/deleteUser?email=${email}`)
 
 		if (res.data.type === 'success') {

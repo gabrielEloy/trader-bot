@@ -6,6 +6,14 @@ import MenuItem from '@material-ui/core/MenuItem';
 import * as Icon from '@material-ui/icons';
 import robotContext from '../context/robotContext'
 
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+/* End Dialog */
+
+
 import 'global.css';
 
 function HydraMenu(props) {
@@ -21,11 +29,15 @@ function HydraMenu(props) {
 		},
 	} = useContext(robotContext)
 
-	console.log({userId,
+	const [modalVisibility, setModalVisiblity] = React.useState(false)
+
+	console.log({
+		userId,
 		email,
 		balance,
 		isRealAccount,
-		password,})
+		password,
+	})
 	const history = useHistory();
 
 	const [anchorEl, setAnchorEl] = useState(null);
@@ -62,6 +74,7 @@ function HydraMenu(props) {
 		history.push(`/systemSettings/${props.id}`);
 	}
 
+
 	return (
 		<div style={{ width: '75%' }}>
 			<Button variant="outlined" aria-controls="simple-menu" aria-haspopup="true" color="default" onClick={handleClick} style={{ color: '#fff', border: '2px solid #fff', borderRadius: 10, marginLeft: 15, display: 'flex' }}>
@@ -74,9 +87,6 @@ function HydraMenu(props) {
 				open={Boolean(anchorEl)}
 				onClose={handleClose}
 			>
-				<MenuItem onClick={handleHome}>
-					<Icon.Home />Login
-				</MenuItem>
 				{
 					userId != 1 &&
 					/* true && */
@@ -112,7 +122,31 @@ function HydraMenu(props) {
 						<Icon.Lock />Ger. Sistema
 					</MenuItem>
 				}
+				<MenuItem onClick={() => setModalVisiblity(true)}>
+					<Icon.ExitToApp />Sair
+				</MenuItem>
 			</Menu>
+			<Dialog
+				open={modalVisibility}
+				onClose={() => setModalVisiblity(false)}
+				aria-labelledby="alert-dialog-title"
+				aria-describedby="alert-dialog-description" >
+
+				<DialogTitle id="alert-dialog-title">{"Sair"}</DialogTitle>
+				<DialogContent>
+					<DialogContentText id="alert-dialog-description">
+						Deseja realmente sair ?
+          						</DialogContentText>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setModalVisiblity(false)} color="error">
+						Cancelar
+          						</Button>
+					<Button onClick={handleHome} color="primary" autoFocus>
+						Confirmar
+          					</Button>
+				</DialogActions>
+			</Dialog>
 		</div>
 	)
 }
