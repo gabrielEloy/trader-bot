@@ -20,7 +20,7 @@
 }
 
 .button-menu{
-  overflow: visible;
+  overflow: hidden;
 }
 
 .button-menu:hover,
