@@ -84,18 +84,6 @@ export default class Configuration extends React.Component {
 		}
 		
 		console.log({signalsByplayTime})
-		/* const now = moment().unix();
-		const tomorrow = moment().endOf('day').unix()
-		if(unixDate > now && unixDate < tomorrow) {
-			const waitTime = (unixDate - now) * 1000
-			console.log({waitTime})
-			setTimeout(async () => {
-				const receivedPlay = this.makePlayFactory(signal.currency, signal.type);
-				await receivedPlay();
-			}, waitTime)
-		} */
-
-		
 	}
 
 	start = async (plays, hand_soros, result, profit, agregated_value, currency, type, duration_time, error, num_martingale, num_soros) => {
@@ -151,7 +139,7 @@ export default class Configuration extends React.Component {
 
 		try {
 			const { data: { records } } = await api.get('/indexSignal')
-			const futureSignals = records.map(record => ({...record, date: 'Wed 26 Aug 2020 12:41:20 GMT-0300'}))
+			const futureSignals = records.map(record => ({...record, date: `${record.date}-0300`}))
 			signal.setSignals(futureSignals)
 		} catch (err) {
 			showToast({ type: 'error', message: 'Ocorreu um erro ao baixar os sinais' })
@@ -182,8 +170,8 @@ export default class Configuration extends React.Component {
 			resultsObj = await this.getLastWins()
 		}
 
-		this.setState({ resultsObj })
-		this.setState({ timeUntilWinFetch: 0, shouldFetchResults: false })
+		
+		return resultsObj
 	}
 
 	getLastWins = async () => {
@@ -265,7 +253,6 @@ export default class Configuration extends React.Component {
 				this.balance = 0
 				this.isPlaying = false
 				this.setState({ isPlaying: false })
-
 			}
 			return
 		}
@@ -279,38 +266,62 @@ export default class Configuration extends React.Component {
 	}
 
 
-	checkWin = async id => {
-		const { resultsObj } = this.state;
+	checkWin = async playsArray => {
+		const { initialValue, martingaleCoef, isSoros } = this.state;
+
+		let resultsObj = {};
+		let retryTime = 1100;
+
 
 		while (!resultsObj.closed_options) {
-			await new Promise(resolve => setTimeout(resolve, 1100))
+			resultsObj = await this.getResultsObj()
+			if(!resultsObj.closed_options){
+				retryTime = await this.getLastResolution()
+			}
+			await new Promise(resolve => setTimeout(resolve, retryTime))
 		}
 
+		console.log('eu passo do while do checkwin ?')
+		console.log({playsArray, resultsObj})
+		
+		const updatedPlaysArray = playsArray.map(play => {
+			const targetPlay = resultsObj.closed_options.find(option => option.id.includes(play.id))
+			console.log({targetPlay})
 
-		let targetPlay = resultsObj.closed_options.find(play => play.id.includes(id))
+			if(!targetPlay){
+				return {...play, tries: 0}
+			}
 
-		while (!targetPlay) {
-			await new Promise(resolve => setTimeout(resolve, 800))
-			targetPlay = resultsObj.closed_options.find(play => play.id.includes(id))
-		}
+			const { amount, win_amount } = targetPlay	
+			
+			if (targetPlay.win === 'win') {
+				const addedAmount = win_amount - amount
+				this.checkStop(addedAmount, true)
+				this.balance += addedAmount
+				
+				const agregated_value = isSoros
+				? play.agregated_value += play.agregated_value * 0.8
+				: initialValue
+				
+				return {...play, agregated_value}
+			}
+	
+			this.checkStop(amount, false)
+			this.balance -= amount;
+			const agregated_value = isSoros 
+			? initialValue
+			: play.agregated_value * martingaleCoef
+			return {...play, tries: play.tries - 1, agregated_value}
+		})
 
-		const { amount, win_amount } = targetPlay
+		console.log('eu sai do map', {updatedPlaysArray})
 
-		if (targetPlay.win === 'win') {
-			const addedAmount = win_amount - amount
-			this.checkStop(addedAmount, true)
-			this.balance += addedAmount
-			return true
-		}
-
-		this.checkStop(amount, false)
-		this.balance -= amount;
-		return false
+		return updatedPlaysArray
 	}
-
-
+	
+	
 	makePlayFactory = (playsArray) => {
-		const { isMartingale, martingaleNum, sorosNum, initialValue, martingaleCoef, isSoros } = this.state
+		const { isMartingale, martingaleNum, sorosNum, initialValue } = this.state
 
 		let data = playsArray.map(play => ({
 			...play,
@@ -319,23 +330,10 @@ export default class Configuration extends React.Component {
 			expiration: parseInt(play.duration_time.split(' ')[0])
 		}))
 
-
-		/* const configuredValue = isMartingale
-			? martingaleNum
-			: sorosNum
-		let tries = configuredValue; */
-
-		/* let value = initialValue */
-
 		return async () => {
-			console.log({data})
-			data = data.filter(play => play.tries > 0)
-			/* if (tries === 0) {
-				value = initialValue;
-				tries = configuredValue;
-			}
-			 */
-			while (this.isPlaying) {
+			while (this.isPlaying && data.length >  0) {
+				data = data.filter(play => play.tries > 0)
+
 				console.log({ ['this.isPlaying']: this.isPlaying })
 				try {
 					const ids = await this.start(data, 0, null, null, 0, null, null, null, false, martingaleNum, sorosNum)
@@ -358,26 +356,10 @@ export default class Configuration extends React.Component {
 				console.log(`esperando o timeout - ${this.state.timeUntilWinFetch}`)
 
 				await new Promise(resolve => setTimeout(resolve, this.state.timeUntilWinFetch))
-				data.map(play => {
-					const win = this.checkWin(play.id)
-					if (isMartingale) {
-						if (win) {
-							play.agregated_value = initialValue
-							play.tries = isMartingale ? martingaleNum : sorosNum;
-						} else {
-							play.agregated_value = play.agregated_value * martingaleCoef
-							play.tries -= 1;
-						}
-					} else if (isSoros) {
-						if (win) {
-							play.agregated_value += play.agregated_value * 0.8;
-							play.tries -= 1;
-						} else {
-							play.agregated_value = initialValue;
-							play.tries = isMartingale ? martingaleNum : sorosNum;
-						}
-					}
-				})
+				console.log('passei do timeout agora é só esperar o async')
+				data = await this.checkWin(data)
+
+				console.log({data})
 			}
 		}
 	}
@@ -444,7 +426,7 @@ export default class Configuration extends React.Component {
 		const border = '2px solid #fff'
 		const borderRadiusActive = 25
 		const borderRadius = 40
-		const backgroundColorActive = '#680d26'
+		const backgroundColorActive = '#61541e'
 
 		const { props } = this;
 		const {
@@ -491,6 +473,13 @@ export default class Configuration extends React.Component {
 						<ul style={{ marginLeft: 15, textAlign: 'left', wiidth: '25vh' }}>
 							<li style={{ marginBottom: 10 }}>
 								{
+									activeTab === "3"
+										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "3" })}>G</Button>
+										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "3" })}>G</Button>
+								}
+							</li>
+							<li style={{ marginBottom: 10 }}>
+								{
 									activeTab === "1"
 										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "1" })}>M</Button>
 										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "1" })}>M</Button>
@@ -501,13 +490,6 @@ export default class Configuration extends React.Component {
 									activeTab === "2"
 										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "2" })}>S</Button>
 										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "2" })}>S</Button>
-								}
-							</li>
-							<li style={{ marginBottom: 10 }}>
-								{
-									activeTab === "3"
-										? <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadiusActive, backgroundColor: backgroundColorActive }} variant="outlined" onClick={() => this.setState({ activeTab: "3" })}>G</Button>
-										: <Button className="button-menu" style={{ color: color, fontSize: fontSize, width: width, height: height, border: border, borderRadius: borderRadius }} variant="outlined" onClick={() => this.setState({ activeTab: "3" })}>G</Button>
 								}
 							</li>
 							<li>
@@ -573,11 +555,11 @@ export default class Configuration extends React.Component {
 													<Paper>
 														<h2 className="h2">Martingale</h2>
 														<br></br>
-														<div style={{ display: 'flex' }}>
+														<div style={{ display: 'flex', justifyContent: 'center' }}>
 															<span className="label" style={{ width: 210, color: '#E1E1D6' }}>Coeficiente de Martingale</span>
 															<Field disabled={this.isPlaying} value={martingaleCoef} onChange={e => this.setState({ martingaleCoef: e.target.value })} className="field field-configuration bg-transparent" type="number" name="martingale_coef" />
 														</div>
-														<div style={{ display: 'flex' }}>
+														<div style={{ display: 'flex', justifyContent: 'center' }}>
 															<span className="label" style={{ width: 210, color: '#E1E1D6' }}>Número de entradas</span>
 															<Field disabled={this.isPlaying} value={martingaleNum} onChange={e => this.setState({ martingaleNum: e.target.value })} className="field field-configuration bg-transparent" type="number" name="num_martingale" min={1} />
 														</div>
@@ -587,7 +569,7 @@ export default class Configuration extends React.Component {
 													<Paper>
 														<h2 className="h2">Soros</h2>
 														<br></br>
-														<div style={{ display: 'flex' }}>
+														<div style={{ display: 'flex', justifyContent: 'center' }}>
 															<span className="label" style={{ width: 170, color: '#E1E1D6' }}>Número de entradas</span>
 															<Field disabled={this.isPlaying} value={sorosNum} onChange={e => this.setState({ sorosNum: e.target.value })} className="field field-configuration bg-transparent" type="number" name="num_soros" min={1} />
 														</div>
@@ -597,27 +579,23 @@ export default class Configuration extends React.Component {
 													<Paper>
 														<h2 className="h2">Configurações Gerais</h2>
 														<br></br>
-														<div style={{ display: 'flex' }}>
+														<div style={{ display: 'flex', justifyContent: 'center' }}>
 															<span className="label" style={{ width: 155, color: '#E1E1D6' }}>Stop Loss</span>
 															<Field disabled={this.isPlaying} value={stopLoss} onChange={e => this.setState({ stopLoss: e.target.value })} className="field field-configuration bg-transparent" type="number" name="stop_loss" min={0} />
 														</div>
-														<div style={{ display: 'flex' }}>
+														<div style={{ display: 'flex', justifyContent: 'center' }}>
 															<span className="label" style={{ width: 155, color: '#E1E1D6' }}>Stop Gain</span>
 															<Field disabled={this.isPlaying} value={stopGain} onChange={e => this.setState({ stopGain: e.target.value })} className="field field-configuration bg-transparent" type="number" name="stop_gain" min={1} />
 														</div>
-														<div style={{ display: 'flex' }}>
+														<div style={{ display: 'flex', justifyContent: 'center' }}>
 															<span className="label" style={{ width: 155, color: '#E1E1D6' }}>Valor inicial</span>
 															<Field disabled={this.isPlaying} value={initialValue} onChange={e => this.setState({ initialValue: e.target.value })} className="field field-configuration bg-transparent" type="number" name="initial_value" />
 														</div>
-														<div style={{ display: 'flex' }}>
-															<span className="label" style={{ width: 155, color: '#E1E1D6' }}>Delay da operação</span>
-															<Field disabled={this.isPlaying} value={delayOperation} onChange={e => this.setState({ delayOperation: e.target.value })} className="field field-configuration bg-transparent" type="number" name="delay_operation" min={0} />
-														</div>
-														<div style={{ display: 'flex' }}>
+														<div style={{ display: 'flex', justifyContent: 'center' }}>
 															<RedSwitch name="martingale" disabled={this.isPlaying} onChange={this.handleSelectPlayType} checked={isMartingale} />
 															<span className="label" style={{ color: '#E1E1D6' }}>Usar Martingale</span>
 														</div>
-														<div style={{ display: 'flex' }}>
+														<div style={{ display: 'flex', justifyContent: 'center' }}>
 															<RedSwitch name="soros" disabled={this.isPlaying} onChange={this.handleSelectPlayType} checked={isSoros} />
 															<span className="label" style={{ color: '#E1E1D6' }}>Usar Soros</span>
 														</div>
@@ -625,7 +603,7 @@ export default class Configuration extends React.Component {
 												</Fade>
 												<Fade className="fade" in={activeTab === "4"} style={{ backgroundColor: "transparent", display: activeTab === "4" ? 'block' : 'none' }}>
 													<Paper style={{ overflowY: 'auto' }}>
-														<h2 style={{ color: 'white' }}>Lista de sinais</h2>
+														<h2 style={{ color: 'white' }}>Resultados</h2>
 														<MaterialTable
 															title="Lista de Sinais"
 															icons={tableIcons}

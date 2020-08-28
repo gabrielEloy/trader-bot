@@ -60,36 +60,31 @@ function HydraMenu(props) {
 					<Icon.Home />Login
 				</MenuItem>
 				{
-					/* props.id != 1 && */
-					true &&
+					props.id != 1 &&
 					<MenuItem onClick={handleConfiguration}>
 						<Icon.Build />Configurações
 					</MenuItem>
 				}
 				{
-					/* (props.id == 2 || props.id == 3) && */
-					true &&
+					(props.id == 2 || props.id == 3) &&
 					<MenuItem onClick={handleUserManagement}>
 						<Icon.SupervisorAccount />Ger.Usuários
 					</MenuItem>
 				}
 				{
-					/* (props.id == 1 || props.id == 2 || props.id == 3) && */
-					true &&
+					(props.id == 1 || props.id == 2 || props.id == 3) &&
 					<MenuItem onClick={handleSignalConfiguration}>
 						<Icon.List />Lista Sinais
 					</MenuItem>
 				}
 				{
-					/* props.id == 2 && */
-					true &&
+					props.id == 2 &&
 					<MenuItem onClick={handleAdminSettings}>
 						<Icon.Lock />Ger. Sistema
 					</MenuItem>
 				}
 				{
-					/* props.id == 1 && */
-					true &&
+					props.id == 1 &&
 					<MenuItem onClick={handleSystemSettings}>
 						<Icon.Lock />Ger. Sistema
 					</MenuItem>

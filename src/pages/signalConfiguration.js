@@ -112,6 +112,12 @@ export default function SignalConfiguration(props) {
 						} = values
 						const saveSignal = async () => {
 							console.log(values)
+							console.log({date
+								, hour
+								, duration_time
+								, otc
+								, currency
+								, type})
 							api.post('/saveSignal', {
 								date
 								, hour
@@ -139,10 +145,10 @@ export default function SignalConfiguration(props) {
 									<option value="5">5</option>
 									<option value="15">15</option>
 								</Field>
-								<FormControlLabel
+								{/* <FormControlLabel
 									label="OTC?"
 									control={<Field component={RedSwitchFormik} name="otc" />}
-								/>
+								/> */}
 								<Field className="field generic-field bg-color" type="text" name="currency" placeholder="Ex: EURUSD" maxLength={6} />
 								<Field className="field generic-field bg-color" as="select" name="type" style={{ width: '110px' }} >
 									<option value="CALL">CALL</option>

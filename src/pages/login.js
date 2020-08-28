@@ -28,11 +28,24 @@ export default function Login() {
 
 	const handleSubmit = async (values, { setSubmitting }) => {
 		setSubmitting(true)
-		const { email, password, mode } = values
+		const { email, password, mode, rememberData } = values
 		const {
 			data: { id, type, balance, message }
 		} = await api.post('/login', { email, password, mode });
-
+		if(rememberData){
+			window.localStorage.setItem('email', email)
+			window.localStorage.setItem('password', password)
+			window.localStorage.setItem('rememberData', rememberData)
+			window.localStorage.setItem('mode', mode)
+		} else {
+			window.localStorage.setItem('email', '')
+			window.localStorage.setItem('password', '')
+			window.localStorage.setItem('rememberData', false)
+			window.localStorage.setItem('mode', false)
+		}
+		
+		
+		
 		if (type === 'success') {
 			history.push(`/configuration`);
 			userDispatcher({
@@ -53,7 +66,6 @@ export default function Login() {
 		}
 	}
 
-
 	return (
 		<>
 			<img src={background} alt="background" className="bg-image" />
@@ -65,7 +77,11 @@ export default function Login() {
 						<img src={logoText} alt="H trader" className="App-logo__text" />
 					</div>
 					<Formik
-						initialValues={{ email: '', password: '', mode: false }}
+						initialValues={{ 
+							email: window.localStorage.getItem('email'), 
+							password: window.localStorage.getItem('password'), 
+							mode: window.localStorage.getItem('mode') || false,
+							rememberData: window.localStorage.getItem('rememberData') || false}}
 						validate={values => {
 							const errors = {};
 							if (
@@ -77,16 +93,22 @@ export default function Login() {
 						}}
 						onSubmit={handleSubmit}
 					>
-						{({ isSubmitting }) => (
+						{({ isSubmitting, values }) => (
 							<Form className="form form-login">
-								<Field className="field bg-transparent" type="email" name="email" placeholder="E-mail" />
+								<Field  className="field bg-transparent" type="email" name="email" placeholder="E-mail" />
 								<ErrorMessage className="error" name="email" component="div" />
 								<Field className="field bg-transparent" type="password" name="password" placeholder="Senha" />
 								<ErrorMessage className="error" name="password" component="div" />
-								<FormControlLabel
-									control={<Field component={RedSwitchFormik} name="mode" />}
-									label="Conta Real"
-								/>
+								<div style={{overflow: 'visible'}}>
+									<FormControlLabel
+										control={<Field type="checkbox" component={RedSwitchFormik} name="rememberData" />}
+										label="Lembrar dados"
+									/>
+									<FormControlLabel
+										control={<Field type="checkbox" component={RedSwitchFormik} name="mode" />}
+										label="Conta Real"
+									/>
+								</div>
 								<button
 									className="field submit"
 									type="submit"

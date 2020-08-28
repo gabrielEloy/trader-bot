@@ -8,10 +8,10 @@ const RedSwitch = withStyles({
 	switchBase: {
 		color: '#E1E1D6',
 		'&$checked': {
-			color: '#dc0c30',
+			color: '#f1c40f',
 		},
 		'&$checked + $track': {
-			backgroundColor: '#dc0c30',
+			backgroundColor: '#f1c40f',
 		},
 	},
 	checked: {},
