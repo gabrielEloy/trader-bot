@@ -6,7 +6,6 @@ class Authentication():
         error_password="""{"code":"invalid_credentials","message":"You entered the wrong credentials. Please check that the login/password is correct."}"""
     
         API = IQ_Option(email, password)
-        API.connect()
         check, reason = API.connect()
 
         print(check)

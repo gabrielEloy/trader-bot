@@ -203,9 +203,18 @@ def start():
 @app.route('/check_win', methods=['POST'])
 def check_win(): 
     data = request.get_json()
-    API = IQ_Option(data['email'], data['password'])
-    API.connect()
-    res = API.get_optioninfo_v2(10)
+    
+    try:
+        API = IQ_Option(data['email'], data['password'])
+        API.connect()
+        res = API.get_optioninfo_v2(10)
+    except:
+        print('cai no except')
+        time.sleep(3)
+        print('passei do except')
+        API = IQ_Option(data['email'], data['password'])
+        API.connect()
+        res = API.get_optioninfo_v2(10)
         
     try:
         if res:
@@ -221,7 +230,7 @@ def check_win():
             "message": "Houve um erro, por favor tente novamente"
             }, 400
 
-@app.route('/teste', methods=['POST'])
+""" @app.route('/teste', methods=['POST'])
 def check_win_v3(): 
     data = request.get_json()
     API = Authentication.login(False, data['email'], data['password'], data['mode'], data['user_group_id'])
@@ -231,7 +240,7 @@ def check_win_v3():
     print(id)
     print(check)
     return 'ok'
-        
+         """
 
     
 
